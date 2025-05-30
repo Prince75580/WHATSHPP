@@ -1,18 +1,31 @@
+# Auto install required modules
+import subprocess
+import sys
+
+required_modules = ["flask", "pywhatkit"]
+for module in required_modules:
+    try:
+        __import__(module)
+    except ImportError:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", module])
+
+# After ensuring modules are installed
 from flask import Flask, render_template_string, request
 import pywhatkit
 import time
 import datetime
+import os
 
 app = Flask(__name__)
 
-# Embedded HTML Code
+# HTML template string
 html_code = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>❤️𝑻𝑯𝑬 𝑳𝑬𝑮𝑬𝑵𝑫 𝑷𝑹𝑰𝑵𝑪𝑬 𝑰𝑵𝑺𝑰𝑫𝑬❤️</title>
+    <title>❤️ THE LEGEND PRINCE INSIDE ❤️</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -57,8 +70,8 @@ html_code = """
 </head>
 <body>
     <div class="container">
-        <button onclick="stopMessaging()" style="background-color: #007bff; color: white; border: none; cursor: pointer; padding: 10px; border-radius: 5px;">STOP MESSAGING</button>
-        <h1>❣️OFFLINE WHATSAPP CONVO MADE BY MR PRINCE❣️</h1>
+        <button onclick="stopMessaging()">STOP MESSAGING</button>
+        <h1>❣️ OFFLINE WHATSAPP CONVO MADE BY MR PRINCE ❣️</h1>
         <form method="POST" enctype="multipart/form-data">
             <input type="text" name="your_name" placeholder="Your Name" required>
             <input type="text" name="target_phone" placeholder="Target Phone Number with +91" required>
@@ -90,20 +103,20 @@ def index():
         your_name = request.form.get("your_name")
         target_phone = request.form.get("target_phone")
         target_type = request.form.get("target_type")
-        creds_file = request.files.get("creds_file")
-        message_file = request.files.get("message_file")
         delay_time = int(request.form.get("delay_time"))
 
-        # Save uploaded files
+        creds_file = request.files.get("creds_file")
+        message_file = request.files.get("message_file")
+
         if creds_file:
-            creds_file.save(f"./{creds_file.filename}")
+            creds_file_path = os.path.join("./", creds_file.filename)
+            creds_file.save(creds_file_path)
 
         if message_file:
-            msg_path = f"./{message_file.filename}"
-            message_file.save(msg_path)
+            message_file_path = os.path.join("./", message_file.filename)
+            message_file.save(message_file_path)
 
-            # Read messages
-            with open(msg_path, "r", encoding="utf-8") as f:
+            with open(message_file_path, "r", encoding="utf-8") as f:
                 messages = f.readlines()
 
             for msg in messages:
@@ -114,14 +127,21 @@ def index():
                     hour = send_time.hour
                     minute = send_time.minute
 
-                    print(f"Sending to {target_phone}: {msg}")
+                    print(f"[{your_name}] Sending to {target_phone}: {msg}")
                     try:
-                        pywhatkit.sendwhatmsg(target_phone, msg, hour, minute, wait_time=10, tab_close=True)
-                        time.sleep(delay_time + 5)  # buffer between messages
+                        pywhatkit.sendwhatmsg(
+                            phone_no=target_phone,
+                            message=msg,
+                            time_hour=hour,
+                            time_minute=minute,
+                            wait_time=10,
+                            tab_close=True
+                        )
+                        time.sleep(delay_time + 5)
                     except Exception as e:
-                        print(f"Failed to send: {e}")
+                        print(f"❌ Failed to send: {e}")
 
-        return "✅ Messages sending started. Check WhatsApp Web."
+        return "✅ Messages sending started! Please check your WhatsApp Web."
 
     return render_template_string(html_code)
 
